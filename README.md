@@ -9,8 +9,6 @@ server exposes your library account data as MCP tools so that any MCP-compatible
 AI client can answer questions like:
 
 - *"Which books do I currently have borrowed and when do they need to be returned?"*
-- *"Are there any books by Douglas Adams available in the library?"*
-- *"Please renew item 1234567 for me."*
 
 ---
 
@@ -19,19 +17,14 @@ AI client can answer questions like:
 | MCP Tool | Description |
 |---|---|
 | `get_rented_items` | List all currently borrowed media with due dates |
-| `get_reservations` | List active reservations with queue position |
-| `get_account_info` | Show account name, card validity, and open fees |
-| `search_catalog` | Search the library catalog by title, author, or ISBN |
-| `renew_item` | Attempt to renew a borrowed item by its copy number |
 
 ---
 
 ## Requirements
 
 - Python 3.11+ **or** a container runtime (Podman / Docker)
-- A winmedio OPAC account (library card number + password)
-- The base URL of your library's winmedio portal
-  (e.g. `https://opac.winmedio.net/MyCity` or `https://mylib.winmedio.net/webopac`)
+- A winmedio library account (username + password)
+- Your library's winmedio name (the path segment in the URL, e.g. `buelach`)
 
 ---
 
@@ -41,9 +34,9 @@ All configuration is done via **environment variables**:
 
 | Variable | Required | Description |
 |---|---|---|
-| `WINMEDIO_BASE_URL` | ✅ | Base URL of your library's winmedio portal |
+| `LIBRARY_NAME` | ✅ | Library identifier in the URL path (e.g. `buelach` for `https://www.winmedio.net/buelach/api/…`) |
 | `WINMEDIO_USERNAME` | ✅ | Library card number / username |
-| `WINMEDIO_PASSWORD` | ✅ | Account password |
+| `WINMEDIO_PASSWORD` | ✅ | Account password (plain text) |
 
 ---
 
@@ -59,7 +52,7 @@ podman build -t mcp-winmedio .
 
 ```bash
 podman run --rm -i \
-  -e WINMEDIO_BASE_URL=https://opac.winmedio.net/MyCity \
+  -e LIBRARY_NAME=buelach \
   -e WINMEDIO_USERNAME=your_card_number \
   -e WINMEDIO_PASSWORD=your_password \
   mcp-winmedio
@@ -78,7 +71,7 @@ For **Claude Desktop** (`~/.config/claude/claude_desktop_config.json`):
       "command": "podman",
       "args": [
         "run", "--rm", "-i",
-        "-e", "WINMEDIO_BASE_URL=https://opac.winmedio.net/MyCity",
+        "-e", "LIBRARY_NAME=buelach",
         "-e", "WINMEDIO_USERNAME=your_card_number",
         "-e", "WINMEDIO_PASSWORD=your_password",
         "mcp-winmedio"
@@ -101,7 +94,7 @@ pip install .
 ### 2. Set environment variables
 
 ```bash
-export WINMEDIO_BASE_URL=https://opac.winmedio.net/MyCity
+export LIBRARY_NAME=buelach
 export WINMEDIO_USERNAME=your_card_number
 export WINMEDIO_PASSWORD=your_password
 ```
@@ -126,7 +119,7 @@ python -m mcp_winmedio.server
     "winmedio": {
       "command": "mcp-winmedio",
       "env": {
-        "WINMEDIO_BASE_URL": "https://opac.winmedio.net/MyCity",
+        "LIBRARY_NAME": "buelach",
         "WINMEDIO_USERNAME": "your_card_number",
         "WINMEDIO_PASSWORD": "your_password"
       }
@@ -150,20 +143,6 @@ pip install -e ".[dev]"
 # Run tests
 pytest
 ```
-
----
-
-## Finding your library's winmedio URL
-
-Most winmedio portals follow one of these URL patterns:
-
-- `https://opac.winmedio.net/<CityName>`
-- `https://<city>.winmedio.net/webopac`
-- `https://www.winmedio.net/<city>/`
-
-Search for your library name together with "winmedio" or "webopac" to find the
-correct URL.  The login page is usually reachable at the root or at
-`Default.aspx` / `index.aspx`.
 
 ---
 
