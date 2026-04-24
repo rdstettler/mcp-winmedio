@@ -209,7 +209,7 @@ class WinmedioClient:
             msg = "; ".join(str(m) for m in messages) if messages else "Unknown error"
             raise RuntimeError(f"Error checking if book can be extended: {msg}")
 
-        return data.get("dataObject") == "true"
+        return data.get("dataObject")
 
     # ------------------------------------------------------------------
     # Context manager support
