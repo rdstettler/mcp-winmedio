@@ -27,6 +27,8 @@ class RentedItem:
 
     title: str
     due_date: str
+    id: str
+    canRenew: bool
 
 
 class WinmedioAuthError(Exception):
@@ -134,6 +136,8 @@ class WinmedioClient:
         for entry in data.get("dataObject") or []:
             title = ""
             due_date = ""
+            id = entry.get("exemplarId", "")
+            can_renew = entry.get("canRenew", True)
 
             for feld in entry.get("felder") or []:
                 label = feld.get("label", "")
@@ -143,9 +147,69 @@ class WinmedioClient:
                     due_date = feld.get("value", "")
 
             if title:
-                items.append(RentedItem(title=title, due_date=due_date))
+                items.append(RentedItem(title=title, due_date=due_date, id=id, canRenew=can_renew))
 
         return items
+
+    # ------------------------------------------------------------------
+    # Is allowed extend (Ausleihen_Verlaengern)
+    # ------------------------------------------------------------------
+
+    def get_is_allowed_extend(self, id: str) -> bool:
+        """Return true if the item with the given id can be extended."""
+        self._ensure_logged_in()
+
+        adresse_id = self._adresse_id
+
+        url = self._api_url(f"account/renew")
+        response = self._client.post(url, json={
+            "adresseId": adresse_id,
+            "childId": "",
+            "id": id,
+            "isAnfrage": True,
+            "isLehrer": False,
+            "transHerkunft": 2,
+        })
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get("hasErrors"):
+            messages = data.get("validationMessages") or data.get("exceptions") or []
+            msg = "; ".join(str(m) for m in messages) if messages else "Unknown error"
+            raise RuntimeError(f"Error checking if book can be extended: {msg}")
+
+        return data.get("dataObject") == "true"
+
+    # ------------------------------------------------------------------
+    # Extend (Ausleihen_Verlaengern)
+    # ------------------------------------------------------------------
+
+    def extend(self, id: str) -> str:
+        """Extend the item with the given id."""
+        self._ensure_logged_in()
+
+        adresse_id = self._adresse_id
+
+        url = self._api_url(f"account/renew")
+        response = self._client.post(url, json={
+            "adresseId": adresse_id,
+            "childId": "",
+            "id": id,
+            "isAnfrage": False,
+            "isLehrer": False,
+            "transHerkunft": 2,
+        })
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get("hasErrors"):
+            messages = data.get("validationMessages") or data.get("exceptions") or []
+            msg = "; ".join(str(m) for m in messages) if messages else "Unknown error"
+            raise RuntimeError(f"Error checking if book can be extended: {msg}")
+
+        return data.get("dataObject") == "true"
 
     # ------------------------------------------------------------------
     # Context manager support

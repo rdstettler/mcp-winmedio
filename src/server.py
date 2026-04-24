@@ -93,3 +93,37 @@ def get_rented_items() -> str:
     finally:
         client.close()
 
+@mcp.tool()
+def is_allow_extend(id: str) -> str:
+    """Return true if the item with the given id can be extended."""
+    client = _get_client()
+    try:
+        is_allowed_extend = client.get_is_allowed_extend(id)
+        if not is_allowed_extend:
+            return "Book cannot be extended any more."
+        else:
+            return "Book can be extended."
+    except WinmedioAuthError as exc:
+        return f"Authentication error: {exc}"
+    except Exception as exc:  # noqa: BLE001
+        return f"Error checking if book can be extended: {exc}"
+    finally:
+        client.close()
+
+@mcp.tool()
+def extend(id: str) -> str:
+    """Extend the item with the given id."""
+    client = _get_client()
+    try:
+        is_allowed_extend = client.get_is_allowed_extend(id)
+        if not is_allowed_extend:
+            return "Book cannot be extended any more."
+        else:
+            result = client.extend(id)
+            return _to_json(result)
+    except WinmedioAuthError as exc:
+        return f"Authentication error: {exc}"
+    except Exception as exc:  # noqa: BLE001
+        return f"Error extending book: {exc}"
+    finally:
+        client.close()
