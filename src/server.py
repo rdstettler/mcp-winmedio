@@ -22,7 +22,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from mcp_winmedio.winmedio_client import (
+from winmedio_client import (
     WinmedioAuthError,
     WinmedioClient,
 )
