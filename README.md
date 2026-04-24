@@ -51,31 +51,18 @@ podman build -t mcp-winmedio .
 ### 2. Run the MCP server
 
 ```bash
-podman run --rm -i \
-  -e LIBRARY_NAME=buelach \
-  -e WINMEDIO_USERNAME=your_card_number \
-  -e WINMEDIO_PASSWORD=your_password \
-  mcp-winmedio
+podman run -d --name mcp-winmedio -p 8005:8005 --env-file .env mcp-winmedio
 ```
-
-The `-i` flag keeps stdin open, which is required for the stdio-based MCP transport.
 
 ### 3. Add to your MCP client
 
-For **Claude Desktop** (`~/.config/claude/claude_desktop_config.json`):
+For **Antigravity**:
 
 ```json
 {
   "mcpServers": {
-    "winmedio": {
-      "command": "podman",
-      "args": [
-        "run", "--rm", "-i",
-        "-e", "LIBRARY_NAME=buelach",
-        "-e", "WINMEDIO_USERNAME=your_card_number",
-        "-e", "WINMEDIO_PASSWORD=your_password",
-        "mcp-winmedio"
-      ]
+    "winmedio-remote": {
+      "serverUrl": "http://[IP_ADDRESS]/mcp"
     }
   }
 }
@@ -94,7 +81,7 @@ pip install .
 ### 2. Set environment variables
 
 ```bash
-export LIBRARY_NAME=buelach
+export LIBRARY_NAME=your_library
 export WINMEDIO_USERNAME=your_card_number
 export WINMEDIO_PASSWORD=your_password
 ```
@@ -109,39 +96,6 @@ Or directly:
 
 ```bash
 python -m mcp_winmedio.server
-```
-
-### 4. Add to Claude Desktop
-
-```json
-{
-  "mcpServers": {
-    "winmedio": {
-      "command": "mcp-winmedio",
-      "env": {
-        "LIBRARY_NAME": "buelach",
-        "WINMEDIO_USERNAME": "your_card_number",
-        "WINMEDIO_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
----
-
-## Development
-
-```bash
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install in editable mode with all extras
-pip install -e ".[dev]"
-
-# Run tests
-pytest
 ```
 
 ---
