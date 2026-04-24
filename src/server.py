@@ -6,10 +6,10 @@ Exposes the following MCP tools to an AI client:
 * get_rented_items   – list currently borrowed books / media with due dates
 
 Configuration (via environment variables):
-    LIBRARY_NAME       – library identifier in the URL path,
-                         e.g. "buelach" for https://www.winmedio.net/buelach/api/…
-    WINMEDIO_USERNAME  – library card number / username
-    WINMEDIO_PASSWORD  – account password
+    WINMEDIO_LIBRARY_NAME – library identifier in the URL path,
+                          e.g. "buelach" for https://www.winmedio.net/buelach/api/…
+    WINMEDIO_USERNAME     – library card number / username
+    WINMEDIO_PASSWORD     – account password
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import sys
 from dataclasses import asdict
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_winmedio.winmedio_client import (
     WinmedioAuthError,
@@ -34,24 +34,15 @@ from mcp_winmedio.winmedio_client import (
 def _require_env(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
-        print(
-            f"ERROR: Required environment variable '{name}' is not set.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        raise ValueError(f"Required environment variable '{name}' is not set.")
     return value
 
 
 def _get_client() -> WinmedioClient:
-    """Create and return an authenticated :class:`WinmedioClient`.
-
-    A new client instance is created for each call so that credentials are
-    read fresh from the environment.  The login is performed lazily by the
-    client itself on the first API call.
-    """
-    library_name = _require_env("LIBRARY_NAME")
-    username = _require_env("WINMEDIO_USERNAME")
-    password = _require_env("WINMEDIO_PASSWORD")
+    """Create and return an authenticated :class:`WinmedioClient`."""
+    library_name = _require_env("WINMEDIO_LIBRARY_NAME")
+    username = str(_require_env("WINMEDIO_USERNAME"))
+    password = str(_require_env("WINMEDIO_PASSWORD"))
     return WinmedioClient(library_name=library_name, username=username, password=password)
 
 
@@ -88,12 +79,7 @@ def _to_json(obj: Any) -> str:
 
 @mcp.tool()
 def get_rented_items() -> str:
-    """Return all media currently borrowed from the library, including due dates.
-
-    Each item in the result list contains:
-    - title: book/media title (from "TitelKurz" field)
-    - due_date: date by which the item must be returned (from "Ausleihen_AuslBis" field)
-    """
+    """Return all media currently borrowed from the library, including due dates."""
     client = _get_client()
     try:
         items = client.get_rented_items()
@@ -107,16 +93,3 @@ def get_rented_items() -> str:
     finally:
         client.close()
 
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
-
-def main() -> None:
-    """Run the MCP server using stdio transport (default for MCP clients)."""
-    mcp.run(transport="stdio")
-
-
-if __name__ == "__main__":
-    main()

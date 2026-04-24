@@ -77,9 +77,9 @@ class WinmedioClient:
         login_url = self._api_url("auth/login")
         payload = {
             "email": "",
-            "password": self.password,
+            "password": str(self.password),
             "stayLoggedIn": True,
-            "username": self.username,
+            "username": str(self.username),
             "verbundBibliothek": 0,
         }
 
