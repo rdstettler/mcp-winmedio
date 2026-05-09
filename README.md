@@ -40,19 +40,14 @@ All configuration is done via **environment variables**:
 
 ---
 
-## Running with Podman (recommended)
+## Running with Docker Compose (recommended)
 
-### 1. Build the container image
-
-```bash
-podman build -t mcp-winmedio .
-```
-
-### 2. Run the MCP server
+### 1. Build and run the container
 
 ```bash
-podman run -d --name mcp-winmedio -p 8005:8005 --env-file .env mcp-winmedio
+docker compose up -d --build
 ```
+
 
 ### 3. Add to your MCP client
 

@@ -20,6 +20,7 @@ import sys
 from dataclasses import asdict
 from typing import Any
 
+# pyrefly: ignore [missing-import]
 from fastmcp import FastMCP
 
 from winmedio_client import (
@@ -92,6 +93,41 @@ def get_rented_items() -> str:
         return f"Error retrieving rented items: {exc}"
     finally:
         client.close()
+
+
+@mcp.tool()
+def get_reserved_items() -> str:
+    """Return all media currently reserved from the library, including reservation dates."""
+    client = _get_client()
+    try:
+        items = client.get_reserved_items()
+        if not items:
+            return "No items are currently reserved."
+        return _to_json(items)
+    except WinmedioAuthError as exc:
+        return f"Authentication error: {exc}"
+    except Exception as exc:  # noqa: BLE001
+        return f"Error retrieving reserved items: {exc}"
+    finally:
+        client.close()
+
+
+@mcp.tool()
+def search_items(query: str) -> str:
+    """Return all media that match the given query, including due dates."""
+    client = _get_client()
+    try:
+        items = client.search_items(query)
+        if not items:
+            return "No items found matching the query."
+        return _to_json(items)
+    except WinmedioAuthError as exc:
+        return f"Authentication error: {exc}"
+    except Exception as exc:  # noqa: BLE001
+        return f"Error searching for items: {exc}"
+    finally:
+        client.close()
+
 
 @mcp.tool()
 def is_allow_extend(id: str) -> str:

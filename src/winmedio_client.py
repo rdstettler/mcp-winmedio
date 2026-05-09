@@ -30,6 +30,25 @@ class RentedItem:
     id: str
     canRenew: bool
 
+@dataclass
+class ReservedItem:
+    """A single item reserved from the library."""
+
+    title: str
+    reservation_date: str
+    id: str
+    can_cancel: bool
+
+@dataclass
+class SearchItem:
+    """A single item matching the query."""
+
+    title: str
+    id: str
+    abstract: str
+    statusText: str
+    canReserve: bool
+
 
 class WinmedioAuthError(Exception):
     """Raised when authentication fails."""
@@ -151,6 +170,94 @@ class WinmedioClient:
 
         return items
 
+    # ------------------------------------------------------------------
+    # Get reserved items 
+    # ------------------------------------------------------------------
+
+    def get_reserved_items(self) -> list[ReservedItem]:
+        """Return the list of items currently reserved from the library.
+
+        Each item contains:
+        - title: extracted from the "TitelKurz" field
+        - reservation_date: extracted from the "Reservationen_AbholDat" field if exists
+        """
+        self._ensure_logged_in()
+
+        url = self._api_url(f"account/reservationen/{self._adresse_id}/2")
+        response = self._client.get(url)
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get("hasErrors"):
+            messages = data.get("validationMessages") or data.get("exceptions") or []
+            msg = "; ".join(str(m) for m in messages) if messages else "Unknown error"
+            raise RuntimeError(f"Error fetching rented items: {msg}")
+
+        items: list[ReservedItem] = []
+        for entry in data.get("dataObject") or []:
+            title = ""
+            reservation_date = ""
+            id = entry.get("exemplarId", "")
+
+            for feld in entry.get("felder") or []:
+                label = feld.get("label", "")
+                if label == "TitelKurz":
+                    title = feld.get("value", "")
+                elif label == "Reservationen_AbholDat":
+                    reservation_date = feld.get("value", "")
+
+            if title:
+                items.append(ReservedItem(title=title, reservation_date=reservation_date, id=id))
+
+        return items
+
+
+    # ------------------------------------------------------------------
+    # Search all items in library
+    # ------------------------------------------------------------------
+    def search_for_book(self, query: str) -> list[SearchItem]:
+        """Return a list of items matching the query.
+        Tells, if the book is reserved or not."""
+
+        self._ensure_logged_in()
+        userid = self._adresse_id
+
+        url = self._api_url(f"search/autocompletesearch")
+        response = self._client.post(url, json={
+            "ebooksIncluded":1,
+            "from":0,
+            "nrRecords":100,
+            "isSmartCopy":False,
+            "searchTerm":query,
+            "searchGroup":"all",
+            "mitgliedKategorie":34,
+            "userId":"",
+            "selectedFacets":[]}
+        )
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get("hasErrors"):
+            messages = data.get("validationMessages") or data.get("exceptions") or []
+            msg = "; ".join(str(m) for m in messages) if messages else "Unknown error"
+            raise RuntimeError(f"Error fetching reserved items: {msg}")
+
+        elastic_search_result = data.get("dataObject")
+        documents = elastic_search_result.get("documents")
+        items: list[SearchItem] = []
+        for entry in documents or []:
+            title = entry.get("titel1", "")
+            statusText = entry.get("statusText", "")
+            canReserve = entry.get("isReservierbar", False)
+            abstract = entry.get("abstract", "")
+            id = entry.get("id", "")
+            
+            if title:
+                items.append(SearchItem(title=title, statusText=statusText, canReserve=canReserve, abstract=abstract, id=id))
+
+        return items
     # ------------------------------------------------------------------
     # Is allowed extend (Ausleihen_Verlaengern)
     # ------------------------------------------------------------------
