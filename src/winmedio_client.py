@@ -199,6 +199,7 @@ class WinmedioClient:
             title = ""
             reservation_date = ""
             id = entry.get("exemplarId", "")
+            can_cancel = entry.get("canDelete", True)
 
             for feld in entry.get("felder") or []:
                 label = feld.get("label", "")
@@ -208,7 +209,7 @@ class WinmedioClient:
                     reservation_date = feld.get("value", "")
 
             if title:
-                items.append(ReservedItem(title=title, reservation_date=reservation_date, id=id))
+                items.append(ReservedItem(title=title, reservation_date=reservation_date, id=id, can_cancel=can_cancel))
 
         return items
 
