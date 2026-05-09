@@ -117,7 +117,7 @@ def search_items(query: str) -> str:
     """Return all media that match the given query, including due dates."""
     client = _get_client()
     try:
-        items = client.search_items(query)
+        items = client.search_for_book(query)
         if not items:
             return "No items found matching the query."
         return _to_json(items)
